@@ -93,6 +93,65 @@ const MultiInput = ({
   );
 };
 
+// Component for WhatsApp phone number inputs that auto-generate links
+const WhatsAppInput = ({
+  values,
+  onChange,
+}: {
+  values: string[];
+  onChange: (newValues: string[]) => void;
+}) => {
+  const handleValueChange = (index: number, val: string) => {
+    const newArr = [...values];
+    // If it's just a phone number (digits, +, spaces, dashes), auto-generate WhatsApp link
+    if (val && /^[\d\s\+\-\(\)]+$/.test(val.trim())) {
+      // Clean the number (remove spaces, dashes, parentheses)
+      const cleanNumber = val.replace(/[\s\-\(\)]/g, '');
+      // Add country code if not present
+      const formattedNumber = cleanNumber.startsWith('+') ? cleanNumber : `+880${cleanNumber.replace(/^0/, '')}`;
+      newArr[index] = `https://wa.me/${formattedNumber.replace('+', '')}`;
+    } else {
+      newArr[index] = val;
+    }
+    onChange(newArr);
+  };
+
+  const handleAdd = () => onChange([...values, ""]);
+  const handleRemove = (index: number) =>
+    onChange(values.filter((_, i) => i !== index));
+
+  return (
+    <div className="space-y-2">
+      {values.map((val, idx) => (
+        <div key={idx} className="flex gap-2 items-center">
+          <Input
+            placeholder="01970190066 or https://wa.me/8801970190066"
+            value={val}
+            onChange={(e) => handleValueChange(idx, e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => handleRemove(idx)}
+            className="text-red-500 font-semibold"
+          >
+            <FaTrash />
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={handleAdd}
+        className="text-blue-500 font-semibold mt-1"
+      >
+        + Add another
+      </button>
+      <p className="text-xs text-gray-500 mt-1">
+        Enter phone number (e.g., 01970190066) and it will auto-generate WhatsApp link
+      </p>
+    </div>
+  );
+};
+
 export default function GeneralSettingsPage() {
   const {
     data: settingsData,
@@ -504,11 +563,10 @@ export default function GeneralSettingsPage() {
 
             <div>
               <label className="block mb-1 text-sm font-medium">
-                WhatsApp / Messenger Links
+                WhatsApp Numbers
               </label>
-              <MultiInput
+              <WhatsAppInput
                 values={settings.contactAndSocial.whatsappLink}
-                placeholder="https://wa.me/your-number"
                 onChange={(vals) =>
                   handleChange("contactAndSocial", "whatsappLink", vals)
                 }

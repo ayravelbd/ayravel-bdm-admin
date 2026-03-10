@@ -36,25 +36,24 @@ type CategoryFormState = {
   bannerImg: string;
   subCategories: string[];
   mainCategory:
+    | "offer"
     | "women-fashion"
+    | "womens-special"
     | "men-fashion"
     | "mens-special"
-    | "skin-care"
-    | "womens-decor"
-    | "womens-special"
-    | "cosmetics"
     | "bags"
-    | "jewelry"
+    | "skin-care"
+    | "cosmetics"
+    | "womens-decor"
+    | "watches"
+    | "sunglass"
+    | "kids-fashion"
+    | "kitchen"
     | "home-decor"
     | "electronics-&-gadgets"
+    | "jewelry"
     | "shoes"
-    | "watches"
-    | "kids-fashion"
-    | "offer"
-    | "toys"
-    | "health-beauty"
-    | "groceries"
-    | "clothing";
+    | "toys";
 };
 
 type FileType = "imageFile" | "bannerImgFile" | "iconFile";
@@ -173,7 +172,7 @@ export default function EditCategory() {
     image: "",
     bannerImg: "",
     subCategories: [],
-    mainCategory: "women-fashion",
+    mainCategory: "offer",
   });
 
   const [files, setFiles] = useState<{
@@ -199,7 +198,7 @@ export default function EditCategory() {
         image: category.image || "",
         bannerImg: category.bannerImg || "",
         subCategories: category.subCategories || [],
-        mainCategory: (category.mainCategory as CategoryFormState["mainCategory"]) || "women-fashion",
+        mainCategory: (category.mainCategory as CategoryFormState["mainCategory"]) || "offer",
       });
       setFiles({});
     }
@@ -442,25 +441,24 @@ export default function EditCategory() {
                 }
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"
               >
+                <option value="offer">Offer</option>
                 <option value="women-fashion">Women Fashion</option>
+                <option value="women's-special">Womens Special</option>
                 <option value="men-fashion">Men Fashion</option>
                 <option value="mens-special">Mens Special</option>
-                <option value="skin-care">Skin Care</option>
-                <option value="womens-decor">Womens Decor</option>
-                <option value="womens-special">Womens Special</option>
-                <option value="cosmetics">Cosmetics</option>
                 <option value="bags">Bags</option>
-                <option value="jewelry">Jewelry</option>
+                <option value="skin-care">Skin Care</option>
+                <option value="cosmetics">Cosmetics</option>
+                <option value="women's-decor">Womens Decor</option>
+                <option value="watches">Watches</option>
+                <option value="sunglass">Sunglass</option>
+                <option value="kids-fashion">Kids Fashion</option>
+                <option value="kitchen">Kitchen</option>
                 <option value="home-decor">Home Decor</option>
                 <option value="electronics-&-gadgets">Electronics & Gadgets</option>
+                <option value="jewelry">Jewelry</option>
                 <option value="shoes">Shoes</option>
-                <option value="watches">Watches</option>
-                <option value="kids-fashion">Kids Fashion</option>
-                <option value="offer">Offer</option>
                 <option value="toys">Toys</option>
-                <option value="health-beauty">Health & Beauty</option>
-                <option value="groceries">Groceries</option>
-                <option value="clothing">Clothing</option>
               </select>
               {errors.mainCategory && (
                 <p className="text-red-500 text-sm mt-1">{errors.mainCategory}</p>

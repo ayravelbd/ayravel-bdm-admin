@@ -25,7 +25,7 @@ export default function CreateCategoryModal({
   const [iconName, setIconName] = useState("");
   const [subCategoryInput, setSubCategoryInput] = useState("");
   const [subCategories, setSubCategories] = useState<string[]>([]);
-  const [mainCategory, setMainCategory] = useState<string>("women-fashion");
+  const [mainCategory, setMainCategory] = useState<string>("offer");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [bannerImgFile, setBannerImgFile] = useState<File | null>(null);
   const [iconFile, setIconFile] = useState<File | null>(null);
@@ -77,7 +77,7 @@ export default function CreateCategoryModal({
       setName("");
       setDetails("");
       setIconName("");
-      setMainCategory("women-fashion");
+      setMainCategory("offer");
       setSubCategories([]);
       setImageFile(null);
       setBannerImgFile(null);
@@ -123,25 +123,24 @@ export default function CreateCategoryModal({
             onChange={(e) => setMainCategory(e.target.value)}
             className="w-full border rounded-lg px-3 py-2"
           >
+            <option value="offer">Offer</option>
             <option value="women-fashion">Women Fashion</option>
+            <option value="womens-special">Women&apos;s Special</option>
             <option value="men-fashion">Men Fashion</option>
-            <option value="mens-special">Mens Special</option>
-            <option value="skin-care">Skin Care</option>
-            <option value="womens-decor">Womens Decor</option>
-            <option value="womens-special">Womens Special</option>
-            <option value="cosmetics">Cosmetics</option>
+            <option value="mens-special">Men&apos;s Special</option>
             <option value="bags">Bags</option>
-            <option value="jewelry">Jewelry</option>
+            <option value="skin-care">Skin Care</option>
+            <option value="cosmetics">Cosmetics</option>
+            <option value="womens-decor">Women&apos;s Decor</option>
+            <option value="watches">Watches</option>
+            <option value="sunglass">Sunglass</option>
+            <option value="kids-fashion">Kids Fashion</option>
+            <option value="kitchen">Kitchen</option>
             <option value="home-decor">Home Decor</option>
             <option value="electronics-&-gadgets">Electronics & Gadgets</option>
+            <option value="jewelry">Jewelry</option>
             <option value="shoes">Shoes</option>
-            <option value="watches">Watches</option>
-            <option value="kids-fashion">Kids Fashion</option>
-            <option value="offer">Offer</option>
             <option value="toys">Toys</option>
-            <option value="health-beauty">Health & Beauty</option>
-            <option value="groceries">Groceries</option>
-            <option value="clothing">Clothing</option>
           </select>
           <Input
             placeholder="Category Name *"

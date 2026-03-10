@@ -27,25 +27,24 @@ interface CategoryFormData {
   };
   subCategories: string[];
   mainCategory:
+    | "offer"
     | "women-fashion"
+    | "women's-special"
     | "men-fashion"
     | "mens-special"
-    | "skin-care"
-    | "womens-decor"
-    | "womens-special"
-    | "cosmetics"
     | "bags"
-    | "jewelry"
+    | "skin-care"
+    | "cosmetics"
+    | "women's-decor"
+    | "watches"
+    | "sunglass"
+    | "kids-fashion"
+    | "kitchen"
     | "home-decor"
     | "electronics-&-gadgets"
+    | "jewelry"
     | "shoes"
-    | "watches"
-    | "kids-fashion"
-    | "offer"
-    | "toys"
-    | "health-beauty"
-    | "groceries"
-    | "clothing";
+    | "toys";
 }
 
 const AddCategory = () => {
@@ -60,7 +59,7 @@ const AddCategory = () => {
       name: "",
     },
     subCategories: [],
-    mainCategory: "women-fashion",
+    mainCategory: "offer",
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -294,7 +293,7 @@ const AddCategory = () => {
       details: "",
       icon: { name: "" },
       subCategories: [],
-      mainCategory: "women-fashion",
+      mainCategory: "offer",
     });
     setImageFile(null);
     setBannerImgFile(null);
@@ -354,25 +353,24 @@ const AddCategory = () => {
                     }
                     className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                   >
+                    <option value="offer">Offer</option>
                     <option value="women-fashion">Women Fashion</option>
+                    <option value="women's-special">Womens Special</option>
                     <option value="men-fashion">Men Fashion</option>
                     <option value="mens-special">Mens Special</option>
-                    <option value="skin-care">Skin Care</option>
-                    <option value="womens-decor">Womens Decor</option>
-                    <option value="womens-special">Womens Special</option>
-                    <option value="cosmetics">Cosmetics</option>
                     <option value="bags">Bags</option>
-                    <option value="jewelry">Jewelry</option>
+                    <option value="skin-care">Skin Care</option>
+                    <option value="cosmetics">Cosmetics</option>
+                    <option value="women's-decor">Womens Decor</option>
+                    <option value="watches">Watches</option>
+                    <option value="sunglass">Sunglass</option>
+                    <option value="kids-fashion">Kids Fashion</option>
+                    <option value="kitchen">Kitchen</option>
                     <option value="home-decor">Home Decor</option>
                     <option value="electronics-&-gadgets">Electronics & Gadgets</option>
+                    <option value="jewelry">Jewelry</option>
                     <option value="shoes">Shoes</option>
-                    <option value="watches">Watches</option>
-                    <option value="kids-fashion">Kids Fashion</option>
-                    <option value="offer">Offer</option>
                     <option value="toys">Toys</option>
-                    <option value="health-beauty">Health & Beauty</option>
-                    <option value="groceries">Groceries</option>
-                    <option value="clothing">Clothing</option>
                   </select>
                   {errors.mainCategory && (
                     <p className="text-xs sm:text-sm text-red-500 mt-1">

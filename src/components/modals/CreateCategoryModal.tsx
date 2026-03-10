@@ -14,14 +14,18 @@ interface CreateCategoryModalProps {
   onSuccess?: () => void;
 }
 
-export default function CreateCategoryModal({ isOpen, onClose, onSuccess }: CreateCategoryModalProps) {
+export default function CreateCategoryModal({
+  isOpen,
+  onClose,
+  onSuccess,
+}: CreateCategoryModalProps) {
   const [createCategory, { isLoading }] = useCreateCategoryMutation();
   const [name, setName] = useState("");
   const [details, setDetails] = useState("");
   const [iconName, setIconName] = useState("");
   const [subCategoryInput, setSubCategoryInput] = useState("");
   const [subCategories, setSubCategories] = useState<string[]>([]);
-  const [mainCategory, setMainCategory] = useState<string>("");
+  const [mainCategory, setMainCategory] = useState<string>("women-fashion");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [bannerImgFile, setBannerImgFile] = useState<File | null>(null);
   const [iconFile, setIconFile] = useState<File | null>(null);
@@ -29,7 +33,10 @@ export default function CreateCategoryModal({ isOpen, onClose, onSuccess }: Crea
   const [bannerPreview, setBannerPreview] = useState<string>("");
   const [iconPreview, setIconPreview] = useState<string>("");
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "bannerImg" | "icon") => {
+  const handleImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "image" | "bannerImg" | "icon",
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const previewUrl = URL.createObjectURL(file);
@@ -70,7 +77,7 @@ export default function CreateCategoryModal({ isOpen, onClose, onSuccess }: Crea
       setName("");
       setDetails("");
       setIconName("");
-      setMainCategory("");
+      setMainCategory("women-fashion");
       setSubCategories([]);
       setImageFile(null);
       setBannerImgFile(null);
@@ -87,7 +94,10 @@ export default function CreateCategoryModal({ isOpen, onClose, onSuccess }: Crea
   };
 
   const addSubCategory = () => {
-    if (subCategoryInput.trim() && !subCategories.includes(subCategoryInput.trim())) {
+    if (
+      subCategoryInput.trim() &&
+      !subCategories.includes(subCategoryInput.trim())
+    ) {
       setSubCategories([...subCategories, subCategoryInput.trim()]);
       setSubCategoryInput("");
     }
@@ -100,25 +110,85 @@ export default function CreateCategoryModal({ isOpen, onClose, onSuccess }: Crea
       <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
           <h2 className="text-xl font-semibold">Create Category</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <Input placeholder="Main Category *" value={mainCategory} onChange={(e) => setMainCategory(e.target.value)} required />
-          <Input placeholder="Category Name *" value={name} onChange={(e) => setName(e.target.value)} required />
-          <Textarea placeholder="Details" value={details} onChange={(e) => setDetails(e.target.value)} rows={2} />
-          <Input placeholder="Icon Name" value={iconName} onChange={(e) => setIconName(e.target.value)} />
+          <select
+            value={mainCategory}
+            onChange={(e) => setMainCategory(e.target.value)}
+            className="w-full border rounded-lg px-3 py-2"
+          >
+            <option value="women-fashion">Women Fashion</option>
+            <option value="men-fashion">Men Fashion</option>
+            <option value="mens-special">Mens Special</option>
+            <option value="skin-care">Skin Care</option>
+            <option value="womens-decor">Womens Decor</option>
+            <option value="womens-special">Womens Special</option>
+            <option value="cosmetics">Cosmetics</option>
+            <option value="bags">Bags</option>
+            <option value="jewelry">Jewelry</option>
+            <option value="home-decor">Home Decor</option>
+            <option value="electronics-&-gadgets">Electronics & Gadgets</option>
+            <option value="shoes">Shoes</option>
+            <option value="watches">Watches</option>
+            <option value="kids-fashion">Kids Fashion</option>
+            <option value="offer">Offer</option>
+            <option value="toys">Toys</option>
+            <option value="health-beauty">Health & Beauty</option>
+            <option value="groceries">Groceries</option>
+            <option value="clothing">Clothing</option>
+          </select>
+          <Input
+            placeholder="Category Name *"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+          <Textarea
+            placeholder="Details"
+            value={details}
+            onChange={(e) => setDetails(e.target.value)}
+            rows={2}
+          />
+          <Input
+            placeholder="Icon Name"
+            value={iconName}
+            onChange={(e) => setIconName(e.target.value)}
+          />
           <div className="flex gap-2">
-            <Input placeholder="Sub Category" value={subCategoryInput} onChange={(e) => setSubCategoryInput(e.target.value)} onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addSubCategory())} />
-            <Button type="button" onClick={addSubCategory} size="sm">Add</Button>
+            <Input
+              placeholder="Sub Category"
+              value={subCategoryInput}
+              onChange={(e) => setSubCategoryInput(e.target.value)}
+              onKeyPress={(e) =>
+                e.key === "Enter" && (e.preventDefault(), addSubCategory())
+              }
+            />
+            <Button type="button" onClick={addSubCategory} size="sm">
+              Add
+            </Button>
           </div>
           {subCategories.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {subCategories.map((sub, i) => (
-                <span key={i} className="bg-gray-100 px-2 py-1 rounded text-sm flex items-center gap-1">
+                <span
+                  key={i}
+                  className="bg-gray-100 px-2 py-1 rounded text-sm flex items-center gap-1"
+                >
                   {sub}
-                  <X className="w-3 h-3 cursor-pointer" onClick={() => setSubCategories(subCategories.filter((_, idx) => idx !== i))} />
+                  <X
+                    className="w-3 h-3 cursor-pointer"
+                    onClick={() =>
+                      setSubCategories(
+                        subCategories.filter((_, idx) => idx !== i),
+                      )
+                    }
+                  />
                 </span>
               ))}
             </div>
@@ -128,13 +198,30 @@ export default function CreateCategoryModal({ isOpen, onClose, onSuccess }: Crea
               <label className="text-xs font-medium">Icon</label>
               {iconPreview ? (
                 <div className="relative">
-                  <Image src={iconPreview} alt="Icon" width={80} height={80} className="w-full h-20 object-cover rounded" />
-                  <X className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white rounded-full cursor-pointer" onClick={() => { setIconFile(null); setIconPreview(""); }} />
+                  <Image
+                    src={iconPreview}
+                    alt="Icon"
+                    width={80}
+                    height={80}
+                    className="w-full h-20 object-cover rounded"
+                  />
+                  <X
+                    className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white rounded-full cursor-pointer"
+                    onClick={() => {
+                      setIconFile(null);
+                      setIconPreview("");
+                    }}
+                  />
                 </div>
               ) : (
                 <label className="border-2 border-dashed rounded p-2 flex flex-col items-center cursor-pointer hover:border-blue-400">
                   <UploadCloud className="w-6 h-6 text-gray-400" />
-                  <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, "icon")} className="hidden" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, "icon")}
+                    className="hidden"
+                  />
                 </label>
               )}
             </div>
@@ -142,13 +229,30 @@ export default function CreateCategoryModal({ isOpen, onClose, onSuccess }: Crea
               <label className="text-xs font-medium">Image</label>
               {imagePreview ? (
                 <div className="relative">
-                  <Image src={imagePreview} alt="Image" width={80} height={80} className="w-full h-20 object-cover rounded" />
-                  <X className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white rounded-full cursor-pointer" onClick={() => { setImageFile(null); setImagePreview(""); }} />
+                  <Image
+                    src={imagePreview}
+                    alt="Image"
+                    width={80}
+                    height={80}
+                    className="w-full h-20 object-cover rounded"
+                  />
+                  <X
+                    className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white rounded-full cursor-pointer"
+                    onClick={() => {
+                      setImageFile(null);
+                      setImagePreview("");
+                    }}
+                  />
                 </div>
               ) : (
                 <label className="border-2 border-dashed rounded p-2 flex flex-col items-center cursor-pointer hover:border-blue-400">
                   <UploadCloud className="w-6 h-6 text-gray-400" />
-                  <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, "image")} className="hidden" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, "image")}
+                    className="hidden"
+                  />
                 </label>
               )}
             </div>
@@ -156,21 +260,49 @@ export default function CreateCategoryModal({ isOpen, onClose, onSuccess }: Crea
               <label className="text-xs font-medium">Banner</label>
               {bannerPreview ? (
                 <div className="relative">
-                  <Image src={bannerPreview} alt="Banner" width={80} height={80} className="w-full h-20 object-cover rounded" />
-                  <X className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white rounded-full cursor-pointer" onClick={() => { setBannerImgFile(null); setBannerPreview(""); }} />
+                  <Image
+                    src={bannerPreview}
+                    alt="Banner"
+                    width={80}
+                    height={80}
+                    className="w-full h-20 object-cover rounded"
+                  />
+                  <X
+                    className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white rounded-full cursor-pointer"
+                    onClick={() => {
+                      setBannerImgFile(null);
+                      setBannerPreview("");
+                    }}
+                  />
                 </div>
               ) : (
                 <label className="border-2 border-dashed rounded p-2 flex flex-col items-center cursor-pointer hover:border-blue-400">
                   <UploadCloud className="w-6 h-6 text-gray-400" />
-                  <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, "bannerImg")} className="hidden" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, "bannerImg")}
+                    className="hidden"
+                  />
                 </label>
               )}
             </div>
           </div>
           <div className="flex gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
             <Button type="submit" disabled={isLoading} className="flex-1">
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create"}
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Create"
+              )}
             </Button>
           </div>
         </form>

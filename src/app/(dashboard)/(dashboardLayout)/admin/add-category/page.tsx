@@ -2,6 +2,7 @@
 import React, { useState, useCallback } from "react";
 import Image from "next/image";
 import { useCreateCategoryMutation } from "@/redux/featured/categories/categoryApi";
+import toast from "react-hot-toast";
 import {
   Upload,
   Book,
@@ -25,7 +26,26 @@ interface CategoryFormData {
     name: string;
   };
   subCategories: string[];
-  mainCategory: string;
+  mainCategory:
+    | "women-fashion"
+    | "men-fashion"
+    | "mens-special"
+    | "skin-care"
+    | "womens-decor"
+    | "womens-special"
+    | "cosmetics"
+    | "bags"
+    | "jewelry"
+    | "home-decor"
+    | "electronics-&-gadgets"
+    | "shoes"
+    | "watches"
+    | "kids-fashion"
+    | "offer"
+    | "toys"
+    | "health-beauty"
+    | "groceries"
+    | "clothing";
 }
 
 const AddCategory = () => {
@@ -40,7 +60,7 @@ const AddCategory = () => {
       name: "",
     },
     subCategories: [],
-    mainCategory: "",
+    mainCategory: "women-fashion",
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -59,7 +79,7 @@ const AddCategory = () => {
       .replace(/(^-|-$)/g, "");
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
 
@@ -92,7 +112,7 @@ const AddCategory = () => {
   const handleImageUpload = useCallback(
     (
       e: React.ChangeEvent<HTMLInputElement>,
-      type: "image" | "bannerImg" | "icon"
+      type: "image" | "bannerImg" | "icon",
     ) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -132,8 +152,8 @@ const AddCategory = () => {
         type === "image"
           ? imagePreview
           : type === "bannerImg"
-          ? bannerPreview
-          : iconPreview;
+            ? bannerPreview
+            : iconPreview;
       if (currentPreview) URL.revokeObjectURL(currentPreview);
 
       const previewUrl = URL.createObjectURL(file);
@@ -153,7 +173,7 @@ const AddCategory = () => {
         setErrors((prev) => ({ ...prev, [type]: "" }));
       }
     },
-    [errors, imagePreview, bannerPreview, iconPreview]
+    [errors, imagePreview, bannerPreview, iconPreview],
   );
 
   const removeImage = (type: "image" | "bannerImg" | "icon") => {
@@ -252,12 +272,14 @@ const AddCategory = () => {
       // ✅ CRITICAL FIX: Pass FormData directly without type casting
       await createCategory(submitFormData).unwrap();
 
+      toast.success("Category created successfully!");
       resetForm();
     } catch (err) {
       console.error("Failed to create category:", err);
       const serverError =
         (err as any)?.data?.message || "An unknown error occurred.";
       setErrors({ api: serverError });
+      toast.error(serverError);
     }
   };
 
@@ -272,7 +294,7 @@ const AddCategory = () => {
       details: "",
       icon: { name: "" },
       subCategories: [],
-      mainCategory: "",
+      mainCategory: "women-fashion",
     });
     setImageFile(null);
     setBannerImgFile(null);
@@ -305,35 +327,6 @@ const AddCategory = () => {
           </p>
         </div>
 
-        <div className="mb-4 sm:mb-6">
-          {isSuccess && (
-            <div className="p-3 sm:p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
-              <span className="text-green-700 font-medium text-sm sm:text-base">
-                Category created successfully!
-              </span>
-            </div>
-          )}
-
-          {error && (
-            <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 flex-shrink-0" />
-              <span className="text-red-700 font-medium text-sm sm:text-base">
-                Error creating category:{" "}
-                {(error as any)?.data?.message || "An unknown error occurred."}
-              </span>
-            </div>
-          )}
-          {errors.api && (
-            <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 flex-shrink-0" />
-              <span className="text-red-700 font-medium text-sm sm:text-base">
-                API Error: {errors.api}
-              </span>
-            </div>
-          )}
-        </div>
-
         <form
           onSubmit={handleSubmit}
           className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8"
@@ -350,18 +343,37 @@ const AddCategory = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     Main Category *
                   </label>
-                  <input
-                    type="text"
-                    name="mainCategory"
+                  <select
                     value={formData.mainCategory}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Book, Electronics, Fashion"
-                    className={`w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border text-sm sm:text-base ${
-                      errors.mainCategory
-                        ? "border-red-400 bg-red-50"
-                        : "border-gray-300"
-                    } focus:ring-2 focus:ring-blue-500`}
-                  />
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        mainCategory: e.target
+                          .value as CategoryFormData["mainCategory"],
+                      })
+                    }
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                  >
+                    <option value="women-fashion">Women Fashion</option>
+                    <option value="men-fashion">Men Fashion</option>
+                    <option value="mens-special">Mens Special</option>
+                    <option value="skin-care">Skin Care</option>
+                    <option value="womens-decor">Womens Decor</option>
+                    <option value="womens-special">Womens Special</option>
+                    <option value="cosmetics">Cosmetics</option>
+                    <option value="bags">Bags</option>
+                    <option value="jewelry">Jewelry</option>
+                    <option value="home-decor">Home Decor</option>
+                    <option value="electronics-&-gadgets">Electronics & Gadgets</option>
+                    <option value="shoes">Shoes</option>
+                    <option value="watches">Watches</option>
+                    <option value="kids-fashion">Kids Fashion</option>
+                    <option value="offer">Offer</option>
+                    <option value="toys">Toys</option>
+                    <option value="health-beauty">Health & Beauty</option>
+                    <option value="groceries">Groceries</option>
+                    <option value="clothing">Clothing</option>
+                  </select>
                   {errors.mainCategory && (
                     <p className="text-xs sm:text-sm text-red-500 mt-1">
                       {errors.mainCategory}
@@ -378,7 +390,7 @@ const AddCategory = () => {
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    placeholder="e.g., Books & Stationery"
+                    placeholder="e.g., Womens Fasion"
                     className={`w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border text-sm sm:text-base ${
                       errors.name
                         ? "border-red-400 bg-red-50"

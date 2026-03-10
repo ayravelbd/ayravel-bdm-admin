@@ -7,6 +7,7 @@ import {
   useUpdateCategoryMutation,
 } from "@/redux/featured/categories/categoryApi";
 import { useParams, useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import {
   Book,
   Upload,
@@ -31,10 +32,29 @@ type CategoryFormState = {
   slug: string;
   details: string;
   icon: CategoryIcon;
-  image: string; // existing image URL or local URL for preview
-  bannerImg: string; // existing banner URL or local URL for preview
+  image: string;
+  bannerImg: string;
   subCategories: string[];
-  mainCategory: string;
+  mainCategory:
+    | "women-fashion"
+    | "men-fashion"
+    | "mens-special"
+    | "skin-care"
+    | "womens-decor"
+    | "womens-special"
+    | "cosmetics"
+    | "bags"
+    | "jewelry"
+    | "home-decor"
+    | "electronics-&-gadgets"
+    | "shoes"
+    | "watches"
+    | "kids-fashion"
+    | "offer"
+    | "toys"
+    | "health-beauty"
+    | "groceries"
+    | "clothing";
 };
 
 type FileType = "imageFile" | "bannerImgFile" | "iconFile";
@@ -153,7 +173,7 @@ export default function EditCategory() {
     image: "",
     bannerImg: "",
     subCategories: [],
-    mainCategory: "",
+    mainCategory: "women-fashion",
   });
 
   const [files, setFiles] = useState<{
@@ -179,7 +199,7 @@ export default function EditCategory() {
         image: category.image || "",
         bannerImg: category.bannerImg || "",
         subCategories: category.subCategories || [],
-        mainCategory: category.mainCategory || "",
+        mainCategory: (category.mainCategory as CategoryFormState["mainCategory"]) || "women-fashion",
       });
       setFiles({});
     }
@@ -352,9 +372,11 @@ export default function EditCategory() {
       // 🚀 Send to server
       await editCategory({ id, updateDetails: submitFormData }).unwrap();
 
+      toast.success("Category updated successfully!");
       router.push("/admin/category-management");
     } catch (err) {
       console.error("update failed:", err);
+      toast.error((err as any)?.data?.message || "Failed to update category");
     }
   };
 
@@ -398,24 +420,6 @@ export default function EditCategory() {
           </p>
         </div>
 
-        {/* Status Messages */}
-        {isSuccess && (
-          <div className="mb-6 p-4 bg-green-100 border border-green-300 rounded-xl flex items-center gap-3 shadow-md">
-            <CheckCircle className="w-6 h-6 text-green-600" />
-            <span className="text-green-800 font-medium">
-              Category updated successfully!
-            </span>
-          </div>
-        )}
-        {error && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-300 rounded-xl flex items-center gap-3 shadow-md">
-            <AlertCircle className="w-6 h-6 text-red-600" />
-            <span className="text-red-800 font-medium">
-              Failed to update category.
-            </span>
-          </div>
-        )}
-
         {/* Form Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left - Basic Info (2/3 width on large screens) */}
@@ -428,13 +432,36 @@ export default function EditCategory() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Main Category *
               </label>
-              <input
-                name="mainCategory"
+              <select
                 value={state.mainCategory}
-                onChange={handleChange}
-                placeholder="e.g., Book, Electronics, Fashion"
+                onChange={(e) =>
+                  setState({
+                    ...state,
+                    mainCategory: e.target.value as CategoryFormState["mainCategory"],
+                  })
+                }
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"
-              />
+              >
+                <option value="women-fashion">Women Fashion</option>
+                <option value="men-fashion">Men Fashion</option>
+                <option value="mens-special">Mens Special</option>
+                <option value="skin-care">Skin Care</option>
+                <option value="womens-decor">Womens Decor</option>
+                <option value="womens-special">Womens Special</option>
+                <option value="cosmetics">Cosmetics</option>
+                <option value="bags">Bags</option>
+                <option value="jewelry">Jewelry</option>
+                <option value="home-decor">Home Decor</option>
+                <option value="electronics-&-gadgets">Electronics & Gadgets</option>
+                <option value="shoes">Shoes</option>
+                <option value="watches">Watches</option>
+                <option value="kids-fashion">Kids Fashion</option>
+                <option value="offer">Offer</option>
+                <option value="toys">Toys</option>
+                <option value="health-beauty">Health & Beauty</option>
+                <option value="groceries">Groceries</option>
+                <option value="clothing">Clothing</option>
+              </select>
               {errors.mainCategory && (
                 <p className="text-red-500 text-sm mt-1">{errors.mainCategory}</p>
               )}

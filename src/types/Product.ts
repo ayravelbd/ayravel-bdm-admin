@@ -1,5 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+export interface ProductVariant {
+  _id?: string;
+  sku: string;
+  price: number;
+  salePrice?: number;
+  quantity: number;
+  specifications: { [key: string]: string };
+  images?: string[];
+  isActive: boolean;
+}
+
 export interface Product {
   message(message: any): unknown;
   _id: string;
@@ -9,6 +20,9 @@ export interface Product {
   previewImg: string[];
   previewPdf?: string;
   video?: string;
+  hasVariants?: boolean;
+  variants?: ProductVariant[];
+  specifications?: { [key: string]: string };
   categoryAndTags: {
     publisher?: string;
     categories: {

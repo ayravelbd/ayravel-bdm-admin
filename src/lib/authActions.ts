@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useRegisterUserMutation } from "@/redux/featured/auth/authApi";
@@ -17,7 +16,7 @@ export function useAuthHandlers() {
     password: string;
   }) => {
     try {
-      const res = await registerUser(data).unwrap();
+      await registerUser(data).unwrap();
       toast.success("Registration successful!");
     } catch (err: any) {
       console.error("Registration failed:", err);

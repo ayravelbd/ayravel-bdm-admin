@@ -50,7 +50,7 @@ type CategoryFormState = {
     | "kids-fashion"
     | "kitchen"
     | "home-decor"
-    | "electronics-&-gadgets"
+    | "electronics-gadgets"
     | "jewelry"
     | "shoes"
     | "toys";
@@ -455,7 +455,7 @@ export default function EditCategory() {
                 <option value="kids-fashion">Kids Fashion</option>
                 <option value="kitchen">Kitchen</option>
                 <option value="home-decor">Home Decor</option>
-                <option value="electronics-&-gadgets">Electronics & Gadgets</option>
+                <option value="electronics-gadgets">Electronics & Gadgets</option>
                 <option value="jewelry">Jewelry</option>
                 <option value="shoes">Shoes</option>
                 <option value="toys">Toys</option>

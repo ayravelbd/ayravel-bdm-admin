@@ -12,13 +12,25 @@ export interface OrderTotalAmount {
 }
 
 export interface OrderInfo {
-  productInfo: string;
+  productInfo: string | {
+    _id: string;
+    featuredImg: string;
+    description: {
+      name: string;
+    };
+    productInfo: {
+      price: number;
+      salePrice: number;
+    };
+  };
+  selectedSpecs?: Record<string, string | number>;
+  variantId?: string;
   trackingNumber: string;
   status: string;
   isCancelled: boolean;
   quantity: number;
   totalAmount: OrderTotalAmount;
-  orderBy: string;
+  orderBy?: string;
   streetAddress?: string;
 }
 

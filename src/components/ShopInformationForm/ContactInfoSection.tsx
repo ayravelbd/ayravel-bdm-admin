@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 import { Phone } from "lucide-react"
 import { Input } from "@/components/ui/input"

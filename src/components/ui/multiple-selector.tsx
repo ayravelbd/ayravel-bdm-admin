@@ -9,7 +9,6 @@ import {
   CommandInput,
   CommandItem,
 } from "@/components/ui/command";
-import { Button } from "@/components/ui/button";
 
 export type Option = {
   value: string;

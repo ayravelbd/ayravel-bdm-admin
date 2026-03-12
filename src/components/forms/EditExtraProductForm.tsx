@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import slugify from "slugify";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +33,7 @@ import MultipleSelector from "../ui/multiselect";
 import { useGetAllCategoriesQuery } from "@/redux/featured/categories/categoryApi";
 import { useGetAlltagsQuery } from "@/redux/featured/tags/tagsApi";
 import { useGetAllbrandsQuery } from "@/redux/featured/brands/brandsApi";
+import { useGetAllParentCategoriesQuery } from "@/redux/featured/parentCategory/parentCategoryApi";
 import { useAppDispatch } from "@/redux/hooks";
 import { setTags } from "@/redux/featured/tags/tagsSlice";
 import { setCategories } from "@/redux/featured/categories/categorySlice";
@@ -44,7 +45,8 @@ import { useGetAllShopsQuery } from "@/redux/featured/shop/shopApi";
 import { Product } from "@/types/Product";
 import { LabelGalleryUploader } from "../shared/LabelGalleryUploader";
 import { useGetAllAuthorsQuery } from "@/redux/featured/author/authorApi";
-import { useGetAllParentCategoriesQuery } from "@/redux/featured/parentCategory/parentCategoryApi";
+import { OptionalSpecificationSelector } from "./OptionalSpecificationSelector";
+import { VariantManager } from "./VariantManager";
 
 type Option = {
   value: string; // ক্যাটাগরি ID থাকবে (যেমন: "68d90...")
@@ -75,6 +77,8 @@ export default function EditExtraProductForm({
   const [updateProduct] = useUpdateProductMutation();
   const { data: categoriesData, isLoading: isCategoriesLoading } =
     useGetAllCategoriesQuery(undefined);
+  const { data: parentCategoriesData, isLoading: isParentCategoriesLoading } =
+    useGetAllParentCategoriesQuery(undefined);
 
   const { data: tagsData, isLoading: isTagsLoading } =
     useGetAlltagsQuery(undefined);
@@ -109,6 +113,33 @@ export default function EditExtraProductForm({
     labelImageFiles: [],
     labelInterestedPreviousImg: [],
   });
+
+  // State for specifications
+  const [specifications, setSpecifications] = useState<{ [key: string]: string[] }>({});
+  const [variants, setVariants] = useState<any[]>([]);
+
+  // Initialize specifications from product data
+  useEffect(() => {
+    if (product?.specifications) {
+      // Convert specifications to the expected format if needed
+      const convertedSpecs: { [key: string]: string[] } = {};
+      Object.entries(product.specifications).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          // If it's a string, split by comma or treat as single value
+          convertedSpecs[key] = value.includes(',') ? value.split(',').map(v => v.trim()) : [value];
+        } else if (Array.isArray(value)) {
+          convertedSpecs[key] = value;
+        } else {
+          convertedSpecs[key] = [String(value)];
+        }
+      });
+      setSpecifications(convertedSpecs);
+    }
+    
+    if (product?.variants) {
+      setVariants(product.variants);
+    }
+  }, [product]);
 
   const categoryIds =
     product?.categoryAndTags?.categories?.map((cat: any) => cat._id) || [];
@@ -177,15 +208,28 @@ export default function EditExtraProductForm({
   });
 
   useEffect(() => {
-    if (product && categoriesData) {
+    if (product && categoriesData && parentCategoriesData) {
       const selectedCatIds = product.categoryAndTags.categories.map(
         (c: any) => c._id
       );
 
-      // সাবক্যাটাগরি বের করুন
-      const subCats = categoriesData
+      // Get subcategories from both regular categories and parent category children
+      let subCats: string[] = [];
+      
+      // Check in regular categories
+      const regularCatSubCats = categoriesData
         .filter((cat: any) => selectedCatIds.includes(cat._id))
         .flatMap((cat: any) => cat.subCategories || []);
+      
+      // Check in parent category children
+      const parentCatSubCats = parentCategoriesData
+        .flatMap((parentCat: any) => 
+          parentCat.categories
+            ?.filter((cat: any) => selectedCatIds.includes(cat._id))
+            .flatMap((cat: any) => cat.subCategories || []) || []
+        );
+      
+      subCats = [...regularCatSubCats, ...parentCatSubCats];
 
       setSelectedCategorySubCategories(subCats);
 
@@ -195,13 +239,20 @@ export default function EditExtraProductForm({
         product.categoryAndTags.subCategories || []
       );
     }
-  }, [product, categoriesData, form]);
+  }, [product, categoriesData, parentCategoriesData, form]);
 
   // const onSubmit: SubmitHandler<ProductFormValues> = async (data) => {
   const onSubmit = async (data: any) => {
     const submitToast = toast.loading("Updating Product...");
     try {
       const formData = new FormData();
+
+      // Add specifications to data
+      if (Object.keys(specifications).length > 0) {
+        data.specifications = specifications;
+        data.hasVariants = variants.length > 0;
+        data.variants = variants;
+      }
 
       // Handle featured image
       if (featuredImage) {
@@ -346,26 +397,53 @@ export default function EditExtraProductForm({
       });
 
       // reset এর পরে subCategories স্টেট আপডেট করুন
-      if (categoriesData) {
+      if (categoriesData && parentCategoriesData) {
         const selectedCatIds = product.categoryAndTags.categories.map(
           (c: any) => c._id
         );
-        const subCats = categoriesData
+        
+        // Get subcategories from both regular categories and parent category children
+        let subCats: string[] = [];
+        
+        // Check in regular categories
+        const regularCatSubCats = categoriesData
           .filter((cat: any) => selectedCatIds.includes(cat._id))
           .flatMap((cat: any) => cat.subCategories || []);
+        
+        // Check in parent category children
+        const parentCatSubCats = parentCategoriesData
+          .flatMap((parentCat: any) => 
+            parentCat.categories
+              ?.filter((cat: any) => selectedCatIds.includes(cat._id))
+              .flatMap((cat: any) => cat.subCategories || []) || []
+          );
+        
+        subCats = [...regularCatSubCats, ...parentCatSubCats];
 
         setSelectedCategorySubCategories(subCats);
       }
     }
-  }, [product, categoriesData, form]);
+  }, [product, categoriesData, parentCategoriesData, form]);
 
-  const simplifiedCategories: Option[] =
-    categoriesData?.map((cat: OptionValue) => ({
-      // ✅ cat._id থেকে Option.value এ ম্যাপিং
-      value: cat._id,
-      // ✅ cat.name থেকে Option.label এ ম্যাপিং
-      label: cat.name,
-    })) ?? [];
+  const simplifiedCategories: Option[] = useMemo(() => {
+    if (!categoriesData) return [];
+    
+    const hierarchicalCategories: Option[] = [];
+    
+    // Since categories have mainCategory field, let's use that for hierarchy
+    categoriesData.forEach((cat: any) => {
+      const mainCategoryName = cat.mainCategory ? 
+        cat.mainCategory.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : 
+        '';
+      
+      hierarchicalCategories.push({
+        value: cat._id,
+        label: mainCategoryName ? `${mainCategoryName} > ${cat.name}` : cat.name,
+      });
+    });
+    
+    return hierarchicalCategories;
+  }, [parentCategoriesData, categoriesData]);
 
   const simplifiedTags: Option[] =
     tagsData?.map((tag: OptionValue) => ({
@@ -473,7 +551,7 @@ export default function EditExtraProductForm({
               name="description.name_bn"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name (Bangla)</FormLabel>
+                  <FormLabel>Name (Bangla) <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                   <FormControl>
                     <Input placeholder="Enter product name bangla" {...field} />
                   </FormControl>
@@ -488,7 +566,7 @@ export default function EditExtraProductForm({
               name="description.description_bn"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Product Description (Bangla)</FormLabel>
+                  <FormLabel>Product Description (Bangla) <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                   <FormControl>
                     <Textarea
                       rows={5}
@@ -506,7 +584,7 @@ export default function EditExtraProductForm({
               name="description.metaTitle"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Meta Title</FormLabel>
+                  <FormLabel>Meta Title <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                   <FormControl>
                     <Input placeholder="Enter Meta title" {...field} />
                   </FormControl>
@@ -520,7 +598,7 @@ export default function EditExtraProductForm({
               name="description.metaDescription"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>meta Description</FormLabel>
+                  <FormLabel>Meta Description <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                   <FormControl>
                     <Textarea
                       rows={5}
@@ -538,7 +616,7 @@ export default function EditExtraProductForm({
               name="description.keywords"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Keywords</FormLabel>
+                  <FormLabel>Keywords <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                   <FormControl>
                     {/* isKeywordsLoading/isGenreLoading - যদি লোডিং স্টেট থাকে তবে সেটি ব্যবহার করুন */}
                     <MultipleSelector
@@ -635,27 +713,30 @@ export default function EditExtraProductForm({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="productInfo.quantity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Quantity</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Enter quantity"
-                        value={field.value || ""}
-                        onChange={(e) =>
-                          field.onChange(parseInt(e.target.value, 10) || 0)
-                        }
-                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Only show quantity for simple products */}
+              {form.watch('productType') === 'simple' && (
+                <FormField
+                  control={form.control}
+                  name="productInfo.quantity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quantity</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="Enter quantity"
+                          value={field.value || ""}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value, 10) || 0)
+                          }
+                          onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 control={form.control}
                 name="productInfo.sku"
@@ -750,7 +831,7 @@ export default function EditExtraProductForm({
             name="productInfo.weight"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Weight</FormLabel>
+                <FormLabel>Weight <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                 <FormControl>
                   <Input placeholder="" {...field} />
                 </FormControl>
@@ -767,7 +848,7 @@ export default function EditExtraProductForm({
               name="productInfo.dimensions.width"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Width</FormLabel>
+                  <FormLabel>Width <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., 120cm" {...field} />
                   </FormControl>
@@ -780,7 +861,7 @@ export default function EditExtraProductForm({
               name="productInfo.dimensions.height"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Height</FormLabel>
+                  <FormLabel>Height <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., 75cm" {...field} />
                   </FormControl>
@@ -793,7 +874,7 @@ export default function EditExtraProductForm({
               name="productInfo.dimensions.length"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Length</FormLabel>
+                  <FormLabel>Length <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., 60cm" {...field} />
                   </FormControl>
@@ -810,7 +891,7 @@ export default function EditExtraProductForm({
               name="productInfo.digital"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Digital</FormLabel>
+                  <FormLabel>Digital <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., " {...field} />
                   </FormControl>
@@ -823,7 +904,7 @@ export default function EditExtraProductForm({
               name="productInfo.campaign"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Campaign</FormLabel>
+                  <FormLabel>Campaign <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., " {...field} />
                   </FormControl>
@@ -1000,7 +1081,7 @@ export default function EditExtraProductForm({
               name="productInfo.brand"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Brand</FormLabel>
+                  <FormLabel>Brand <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value as string}
@@ -1091,7 +1172,7 @@ export default function EditExtraProductForm({
                 <FormItem>
                   <FormLabel>Categories</FormLabel>
                   <FormControl>
-                    {isCategoriesLoading ? (
+                    {(isCategoriesLoading || isParentCategoriesLoading) ? (
                       <Input
                         className="animate-pulse"
                         placeholder="Loading Categories..."
@@ -1130,13 +1211,23 @@ export default function EditExtraProductForm({
                         onChange={(options) => {
                           const selectedIds = options.map((opt) => opt.value);
 
-                          const subCats =
-                            categoriesData
-                              ?.filter((cat: any) =>
-                                selectedIds.includes(cat._id)
-                              )
-                              .flatMap((cat: any) => cat.subCategories || []) ||
-                            [];
+                          // Get subcategories from both regular categories and parent category children
+                          let subCats: string[] = [];
+                          
+                          // Check in regular categories
+                          const regularCatSubCats = categoriesData
+                            ?.filter((cat: any) => selectedIds.includes(cat._id))
+                            .flatMap((cat: any) => cat.subCategories || []) || [];
+                          
+                          // Check in parent category children
+                          const parentCatSubCats = parentCategoriesData
+                            ?.flatMap((parentCat: any) => 
+                              parentCat.categories
+                                ?.filter((cat: any) => selectedIds.includes(cat._id))
+                                .flatMap((cat: any) => cat.subCategories || []) || []
+                            ) || [];
+                          
+                          subCats = [...regularCatSubCats, ...parentCatSubCats];
 
                           setSelectedCategorySubCategories(subCats);
                           form.setValue("categoryAndTags.subCategories", []); // পুরানো সাবক্যাটাগরি ক্লিয়ার
@@ -1225,7 +1316,7 @@ export default function EditExtraProductForm({
               name="categoryAndTags.tags"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tags</FormLabel>
+                  <FormLabel>Tags <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                   <FormControl>
                     {isTagsLoading ? (
                       <Input
@@ -1262,6 +1353,22 @@ export default function EditExtraProductForm({
                 </FormItem>
               )}
             />
+            
+            {/* Optional Specifications - Always Available */}
+            <OptionalSpecificationSelector 
+              onSpecsChange={setSpecifications}
+              initialSpecs={specifications}
+            />
+            
+            {/* Variant Management - Show for variable products */}
+            {(form.watch('productType') === "variable" || product?.hasVariants) && (
+              <VariantManager 
+                specifications={specifications}
+                baseProduct={product}
+                onVariantsChange={setVariants}
+                initialVariants={product?.variants || []}
+              />
+            )}
           </div>
         </div>
 

@@ -6,7 +6,7 @@ const baseURL = process.env.NEXT_PUBLIC_BASE_API;
 const baseQuery = fetchBaseQuery({
   baseUrl: baseURL,
   credentials: "include",
-  prepareHeaders: async (headers, { getState, endpoint }) => {
+  prepareHeaders: async (headers, { getState }) => {
     const token = (getState() as RootState).auth.token;
     
     if (!token) {
@@ -44,6 +44,7 @@ export const baseApi = createApi({
     "DynamicPage",
     "Brand",
     "Author",
+    "SpecificationTemplate",
   ],
   refetchOnMountOrArgChange: true,
   refetchOnFocus: true,

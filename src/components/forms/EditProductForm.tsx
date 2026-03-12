@@ -4,7 +4,6 @@
 import { useEffect, useState } from "react";
 import slugify from "slugify";
 import { useForm, SubmitHandler } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Save } from "lucide-react";
 
@@ -35,7 +34,6 @@ import { useGetAlltagsQuery } from "@/redux/featured/tags/tagsApi";
 import { useGetAllbrandsQuery } from "@/redux/featured/brands/brandsApi";
 import { useAppDispatch } from "@/redux/hooks";
 import { setTags } from "@/redux/featured/tags/tagsSlice";
-import { setCategories } from "@/redux/featured/categories/categorySlice";
 import { updateProductZodSchema } from "./formSchema";
 import { useUpdateProductMutation } from "@/redux/featured/products/productsApi";
 import toast from "react-hot-toast";
@@ -44,7 +42,8 @@ import { useGetAllShopsQuery } from "@/redux/featured/shop/shopApi";
 import { Product } from "@/types/Product";
 import { LabelGalleryUploader } from "../shared/LabelGalleryUploader";
 import { useGetAllAuthorsQuery } from "@/redux/featured/author/authorApi";
-import { useGetAllParentCategoriesQuery } from "@/redux/featured/parentCategory/parentCategoryApi";
+import { OptionalSpecificationSelector } from "./OptionalSpecificationSelector";
+import { VariantManager } from "./VariantManager";
 
 type Option = {
   value: string; // ক্যাটাগরি ID থাকবে (যেমন: "68d90...")
@@ -80,8 +79,6 @@ export default function EditProductForm({
     useGetAlltagsQuery(undefined);
   const { data: brands, isLoading: isBrandsLoading } =
     useGetAllbrandsQuery(undefined);
-  const { data: shopData, isLoading: isShopDataLoading } =
-    useGetAllShopsQuery();
   const { data: authors, isLoading: isAuthorsLoading } =
     useGetAllAuthorsQuery(undefined);
 
@@ -112,6 +109,33 @@ export default function EditProductForm({
 
   // State for PDF link
   const [pdfLink, setPdfLink] = useState<string>(product?.previewPdf || "");
+
+  // State for specifications
+  const [specifications, setSpecifications] = useState<{ [key: string]: string[] }>({});
+  const [variants, setVariants] = useState<any[]>([]);
+
+  // Initialize specifications from product data
+  useEffect(() => {
+    if (product?.specifications) {
+      // Convert specifications to the expected format if needed
+      const convertedSpecs: { [key: string]: string[] } = {};
+      Object.entries(product.specifications).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          // If it's a string, split by comma or treat as single value
+          convertedSpecs[key] = value.includes(',') ? value.split(',').map(v => v.trim()) : [value];
+        } else if (Array.isArray(value)) {
+          convertedSpecs[key] = value;
+        } else {
+          convertedSpecs[key] = [String(value)];
+        }
+      });
+      setSpecifications(convertedSpecs);
+    }
+    
+    if (product?.variants) {
+      setVariants(product.variants);
+    }
+  }, [product]);
 
   const categoryIds =
     product?.categoryAndTags?.categories?.map((cat: any) => cat._id) || [];
@@ -199,6 +223,10 @@ export default function EditProductForm({
         series: product?.bookInfo?.series || "",
         translator: product?.bookInfo?.translator || "",
       },
+      // Add specification fields
+      hasVariants: product?.hasVariants || false,
+      specifications: product?.specifications || {},
+      variants: product?.variants || [],
     },
   });
 
@@ -228,6 +256,13 @@ export default function EditProductForm({
     const submitToast = toast.loading("Updating Product...");
     try {
       const formData = new FormData();
+
+      // Add specifications to data
+      if (Object.keys(specifications).length > 0) {
+        data.specifications = specifications;
+        data.hasVariants = variants.length > 0;
+        data.variants = variants;
+      }
 
       // Handle featured image
       if (featuredImage) {
@@ -395,6 +430,10 @@ export default function EditProductForm({
           series: product?.bookInfo?.series || "",
           translator: product?.bookInfo?.specification?.binding || "",
         },
+        // Add specification fields
+        hasVariants: product?.hasVariants || false,
+        specifications: product?.specifications || {},
+        variants: product?.variants || [],
       });
 
       // reset এর পরে subCategories স্টেট আপডেট করুন
@@ -1339,6 +1378,25 @@ export default function EditProductForm({
                 </FormItem>
               )}
             />
+
+            {/* Optional Specifications */}
+            <div className="space-y-4">
+              <OptionalSpecificationSelector
+                onSpecsChange={setSpecifications}
+                initialSpecs={specifications}
+              />
+            </div>
+
+            {/* Variant Manager */}
+            {Object.keys(specifications).length > 0 && (
+              <div className="space-y-4">
+                <VariantManager
+                  specifications={specifications}
+                  baseProduct={product}
+                  onVariantsChange={setVariants}
+                />
+              </div>
+            )}
           </div>
         </div>
 

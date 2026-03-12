@@ -3,8 +3,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import slugify from "slugify";
-import { useForm, SubmitHandler } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm} from "react-hook-form";
 import { z } from "zod";
 import { Plus, Save } from "lucide-react";
 
@@ -30,22 +29,23 @@ import {
 import { Checkbox } from "../ui/checkbox";
 import MultipleSelector from "../ui/multiselect";
 
+import { OptionalSpecificationSelector } from "./OptionalSpecificationSelector";
+import { VariantManager } from "./VariantManager";
 import { useGetAllCategoriesQuery } from "@/redux/featured/categories/categoryApi";
 import { useGetAlltagsQuery } from "@/redux/featured/tags/tagsApi";
 import { useGetAllbrandsQuery } from "@/redux/featured/brands/brandsApi";
+import { useGetAllParentCategoriesQuery } from "@/redux/featured/parentCategory/parentCategoryApi";
 import { useAppDispatch } from "@/redux/hooks";
 import { setTags } from "@/redux/featured/tags/tagsSlice";
 import { setCategories } from "@/redux/featured/categories/categorySlice";
 import { useCreateProductMutation } from "@/redux/featured/products/productsApi";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { useGetAllShopsQuery } from "@/redux/featured/shop/shopApi";
 import { createProductZodSchema } from "./formSchema";
-import { Product } from "@/types/Product";
-import { Switch } from "@radix-ui/react-switch";
+import { ProductVariant } from "@/types/Product";
 import { LabelGalleryUploader } from "../shared/LabelGalleryUploader";
 import { useGetAllAuthorsQuery } from "@/redux/featured/author/authorApi";
-import { useGetAllParentCategoriesQuery } from "@/redux/featured/parentCategory/parentCategoryApi";
+
 import CreateCategoryModal from "../modals/CreateCategoryModal";
 import CreateBrandModal from "../modals/CreateBrandModal";
 import CreateTagModal from "../modals/CreateTagModal";
@@ -65,6 +65,8 @@ export default function AddProductForm() {
   const [createProduct] = useCreateProductMutation();
   const { data: categoriesData, isLoading: isCategoriesLoading, refetch: refetchCategories } =
     useGetAllCategoriesQuery(undefined);
+  const { data: parentCategoriesData, isLoading: isParentCategoriesLoading } =
+    useGetAllParentCategoriesQuery(undefined);
   const { data: tagsData, isLoading: isTagsLoading, refetch: refetchTags } =
     useGetAlltagsQuery(undefined);
   const { data: brands, isLoading: isBrandsLoading, refetch: refetchBrands } =
@@ -72,7 +74,9 @@ export default function AddProductForm() {
   const { data: authors, isLoading: isAuthorsLoading, refetch: refetchAuthors } =
     useGetAllAuthorsQuery(undefined);
 
-  const [activeTab, setActiveTab] = useState<"book" | "non-book">("book");
+ 
+  const [specifications, setSpecifications] = useState<{ [key: string]: string[] }>({});
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showBrandModal, setShowBrandModal] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
@@ -230,6 +234,15 @@ export default function AddProductForm() {
         data.previewPdf = pdfLink;
       }
 
+      // Handle variants data
+      if (data.productType === "variable" && variants.length > 0) {
+        data.hasVariants = true;
+        data.variants = variants;
+      } else {
+        data.hasVariants = false;
+        data.specifications = specifications;
+      }
+
       if (data) {
         formData.append("data", JSON.stringify(data));
       }
@@ -275,14 +288,25 @@ export default function AddProductForm() {
     [brands]
   );
 
-  const simplifiedCategories: Option[] = useMemo(
-    () =>
-      categoriesData?.map((cat: any) => ({
+  const simplifiedCategories: Option[] = useMemo(() => {
+    if (!categoriesData) return [];
+    
+    const hierarchicalCategories: Option[] = [];
+    
+    // Since categories have mainCategory field, let's use that for hierarchy
+    categoriesData.forEach((cat: any) => {
+      const mainCategoryName = cat.mainCategory ? 
+        cat.mainCategory.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : 
+        '';
+      
+      hierarchicalCategories.push({
         value: cat._id,
-        label: cat.name,
-      })) ?? [],
-    [categoriesData]
-  );
+        label: mainCategoryName ? `${mainCategoryName} > ${cat.name}` : cat.name,
+      });
+    });
+    
+    return hierarchicalCategories;
+  }, [parentCategoriesData, categoriesData]);
 
   const simplifiedTags: Option[] = useMemo(
     () =>
@@ -310,7 +334,7 @@ export default function AddProductForm() {
   );
 
   return (
-    <div>
+    <div className="pb-20">
       <CreateCategoryModal isOpen={showCategoryModal} onClose={() => setShowCategoryModal(false)} onSuccess={refetchCategories} />
       <CreateBrandModal isOpen={showBrandModal} onClose={() => setShowBrandModal(false)} onSuccess={refetchBrands} />
       <CreateTagModal isOpen={showTagModal} onClose={() => setShowTagModal(false)} onSuccess={refetchTags} />
@@ -437,7 +461,7 @@ export default function AddProductForm() {
                 name="description.name_bn"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name (Bangla)</FormLabel>
+                    <FormLabel>Name (Bangla) <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Enter product name bangla"
@@ -455,7 +479,7 @@ export default function AddProductForm() {
                 name="description.description_bn"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Product Description (Bangla)</FormLabel>
+                    <FormLabel>Product Description (Bangla) <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                     <FormControl>
                       <Textarea
                         rows={5}
@@ -473,7 +497,7 @@ export default function AddProductForm() {
                 name="description.metaTitle"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Meta Title</FormLabel>
+                    <FormLabel>Meta Title <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                     <FormControl>
                       <Input placeholder="Enter Meta title" {...field} />
                     </FormControl>
@@ -487,7 +511,7 @@ export default function AddProductForm() {
                 name="description.metaDescription"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>meta Description</FormLabel>
+                    <FormLabel>Meta Description <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                     <FormControl>
                       <Textarea
                         rows={5}
@@ -505,7 +529,7 @@ export default function AddProductForm() {
                 name="description.keywords"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Keywords</FormLabel>
+                    <FormLabel>Keywords <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                     <FormControl>
                       {/* isKeywordsLoading/isGenreLoading - যদি লোডিং স্টেট থাকে তবে সেটি ব্যবহার করুন */}
                       <MultipleSelector
@@ -738,7 +762,7 @@ export default function AddProductForm() {
               name="productInfo.weight"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Weight</FormLabel>
+                  <FormLabel>Weight <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                   <FormControl>
                     <Input placeholder="" {...field} />
                   </FormControl>
@@ -755,7 +779,7 @@ export default function AddProductForm() {
                 name="productInfo.dimensions.width"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Width</FormLabel>
+                    <FormLabel>Width <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., 120cm" {...field} />
                     </FormControl>
@@ -768,7 +792,7 @@ export default function AddProductForm() {
                 name="productInfo.dimensions.height"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Height</FormLabel>
+                    <FormLabel>Height <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., 75cm" {...field} />
                     </FormControl>
@@ -781,7 +805,7 @@ export default function AddProductForm() {
                 name="productInfo.dimensions.length"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Length</FormLabel>
+                    <FormLabel>Length <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., 60cm" {...field} />
                     </FormControl>
@@ -798,7 +822,7 @@ export default function AddProductForm() {
                 name="productInfo.digital"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Digital</FormLabel>
+                    <FormLabel>Digital <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., " {...field} />
                     </FormControl>
@@ -811,7 +835,7 @@ export default function AddProductForm() {
                 name="productInfo.campaign"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Campaign</FormLabel>
+                    <FormLabel>Campaign <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., " {...field} />
                     </FormControl>
@@ -1043,7 +1067,7 @@ export default function AddProductForm() {
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-between">
-                      <FormLabel>Brand</FormLabel>
+                      <FormLabel>Brand <span className="text-gray-500 text-sm">(Optional)</span></FormLabel>
                       <button
                         type="button"
                         onClick={() => setShowBrandModal(true)}
@@ -1131,7 +1155,7 @@ export default function AddProductForm() {
                       </button>
                     </div>
                     <FormControl>
-                      {isCategoriesLoading ? (
+                      {(isCategoriesLoading || isParentCategoriesLoading) ? (
                         <Input
                           className="animate-pulse"
                           placeholder="Loading Categories..."
@@ -1160,17 +1184,25 @@ export default function AddProductForm() {
                           }
                           onChange={(options) => {
                             const selectedIds = options.map((opt) => opt.value);
-
-                            // সিলেক্ট করা ক্যাটাগরির subCategories বের করুন
-                            const subCats =
-                              categoriesData
-                                ?.filter((cat: any) =>
-                                  selectedIds.includes(cat._id)
-                                )
-                                .flatMap(
-                                  (cat: any) => cat.subCategories || []
-                                ) || [];
-
+                            
+                            // Get subcategories from both regular categories and parent category children
+                            let subCats: string[] = [];
+                            
+                            // Check in regular categories
+                            const regularCatSubCats = categoriesData
+                              ?.filter((cat: any) => selectedIds.includes(cat._id))
+                              .flatMap((cat: any) => cat.subCategories || []) || [];
+                            
+                            // Check in parent category children
+                            const parentCatSubCats = parentCategoriesData
+                              ?.flatMap((parentCat: any) => 
+                                parentCat.categories
+                                  ?.filter((cat: any) => selectedIds.includes(cat._id))
+                                  .flatMap((cat: any) => cat.subCategories || []) || []
+                              ) || [];
+                            
+                            subCats = [...regularCatSubCats, ...parentCatSubCats];
+                            
                             setSelectedCategorySubCategories(subCats);
                             form.setValue("categoryAndTags.subCategories", []); // রিসেট
 
@@ -1228,7 +1260,7 @@ export default function AddProductForm() {
                   <FormItem>
                     <div className="flex items-center justify-between">
                       <FormLabel>
-                        Tags
+                        Tags <span className="text-gray-500 text-sm">(Optional)</span>
                       </FormLabel>
                       <button
                         type="button"
@@ -1271,312 +1303,28 @@ export default function AddProductForm() {
                   </FormItem>
                 )}
               />
+              
+              {/* Optional Specifications - Always Available */}
+              <OptionalSpecificationSelector 
+                onSpecsChange={setSpecifications}
+                initialSpecs={specifications}
+              />
+              
+              {/* Variant Management */}
+              {form.watch('productType') === "variable" && Object.keys(specifications).length > 0 && (
+                <VariantManager 
+                  specifications={specifications}
+                  baseProduct={form.getValues()}
+                  onVariantsChange={setVariants}
+                />
+              )}
             </div>
           </div>
-
-          {/* Book Details - Full width */}
-          {/* {activeTab === "book" && (
-            <div className="xl:col-span-2 space-y-6 bg-white p-6 rounded-xl shadow-sm">
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold">Book Details</h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="bookInfo.specification.publisher"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Publisher <span className="text-red-500 text-lg">*</span></FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter publisher name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="bookInfo.specification.edition"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Edition</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., 2nd Edition" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="bookInfo.specification.editionYear"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Edition Year</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="e.g., 2021"
-                            value={field.value || ""}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              field.onChange(
-                                value ? parseInt(value, 10) : undefined
-                              );
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="bookInfo.format"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Book Format</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select book format" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="hardcover">Hardcover</SelectItem>
-                            <SelectItem value="paperback">Paperback</SelectItem>
-                            <SelectItem value="ebook">Ebook</SelectItem>
-                            <SelectItem value="audiobook">
-                              Audio book
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="bookInfo.series"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Series</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., " {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="bookInfo.translator"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>translator</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., " {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="bookInfo.specification.numberOfPages"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Number of Pages <span className="text-red-500 text-lg">*</span></FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="e.g., 350"
-                            value={field.value || ""}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              field.onChange(
-                                value ? parseInt(value, 10) : undefined
-                              );
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="bookInfo.specification.country"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Country <span className="text-red-500 text-lg">*</span></FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter country" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="bookInfo.specification.language"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Language <span className="text-red-500 text-lg">*</span></FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., English" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="bookInfo.specification.isbn"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>ISBN</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter ISBN " {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="bookInfo.specification.binding"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Binding <span className="text-red-500 text-lg">*</span></FormLabel>
-                        <FormControl>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <SelectTrigger className=" w-full">
-                              <SelectValue placeholder="Select binding type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="hardcover">
-                                Hardcover
-                              </SelectItem>
-                              <SelectItem value="paperback">
-                                Paperback
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="bookInfo.genre"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Book Info genre</FormLabel>
-                        <FormControl>
-                          <MultipleSelector
-                            value={field.value.map((keyword) => ({
-                              label: keyword,
-                              value: keyword,
-                            }))}
-                            onChange={(options) =>
-                              field.onChange(options.map((opt) => opt.value))
-                            }
-                            defaultOptions={[]}
-                            creatable
-                            placeholder="Type a keyword and press Enter to add..."
-                            emptyIndicator={
-                              <p className="text-center text-sm">
-                                Type your keyword and press Enter.
-                              </p>
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="bookInfo.specification.authors"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center justify-between">
-                          <FormLabel>Authors Name <span className="text-red-500 text-lg">*</span></FormLabel>
-                          <button
-                            type="button"
-                            onClick={() => setShowAuthorModal(true)}
-                            className="text-blue-600 hover:text-blue-700 p-1 rounded-full hover:bg-blue-50"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <FormControl>
-                          {isAuthorsLoading ? (
-                            <Input
-                              className="animate-pulse"
-                              placeholder="Loading Tags..."
-                              disabled
-                            />
-                          ) : (
-                            <MultipleSelector
-                              value={
-                                field.value
-                                  .map((val) =>
-                                    simplifiedAuthors.find(
-                                      (opt) => opt.value === val
-                                    )
-                                  )
-                                  .filter(Boolean) as Option[]
-                              }
-                              onChange={(options) =>
-                                field.onChange(options.map((opt) => opt.value))
-                              }
-                              defaultOptions={simplifiedAuthors}
-                              placeholder="Select tags..."
-                              emptyIndicator={
-                                <p className="text-center text-sm">
-                                  No Authors found.
-                                </p>
-                              }
-                            />
-                          )}
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-            </div>
-          )} */}
-
-          {/* Action Buttons - Full width */}
-          <div className="xl:col-span-2 md:flex gap-4 pt-4 justify-end items-end">
+        </form>
+        
+        {/* Sticky Action Buttons */}
+        <div className="sticky bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-4 shadow-lg">
+          <div className="flex gap-4 justify-end items-center max-w-7xl mx-auto">
             <Button
               type="button"
               variant="outline"
@@ -1587,11 +1335,11 @@ export default function AddProductForm() {
                 form.handleSubmit(onSubmit, onErrors)();
               }}
             >
-              <Save className="mr-2 h-4 w-4 hidden md:flex" /> Save as Draft
+              <Save className="mr-2 h-4 w-4" /> Save as Draft
             </Button>
             <Button
               type="submit"
-              className="mt-2 md:mt-0"
+              form="addProductForm"
               disabled={form.formState.isSubmitting}
             >
               {form.formState.isSubmitting
@@ -1599,7 +1347,7 @@ export default function AddProductForm() {
                 : "Publish Product"}
             </Button>
           </div>
-        </form>
+        </div>
       </Form>
     </div>
   );

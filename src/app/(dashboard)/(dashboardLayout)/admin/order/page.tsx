@@ -1230,10 +1230,6 @@ const OrderPage = () => {
                       </DropdownMenu>
                       <button
                         onClick={() => {
-                          // Get product names from the modal table
-                          const productCells = document.querySelectorAll('tbody tr td:first-child span');
-                          const productNames = Array.from(productCells).map(cell => cell.textContent || 'Product');
-                          
                           const originalContent = document.body.innerHTML;
                           document.body.innerHTML = `
                             <div class="receipt-content">
@@ -1266,6 +1262,7 @@ const OrderPage = () => {
                                   <thead>
                                     <tr>
                                       <th>Product</th>
+                                      <th>Specifications</th>
                                       <th>Quantity</th>
                                       <th>Unit Price</th>
                                       <th>Subtotal</th>
@@ -1273,15 +1270,24 @@ const OrderPage = () => {
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    ${(rawOrder.orderInfo || []).map((item, index) => `
-                                      <tr>
-                                        <td>${productNames[index] || 'Product'}</td>
-                                        <td>${item.quantity}</td>
-                                        <td>৳${Math.round((item.totalAmount?.subTotal || 0) / item.quantity)}</td>
-                                        <td>৳${item.totalAmount?.subTotal || 0}</td>
-                                        <td>${item.status}</td>
-                                      </tr>
-                                    `).join('')}
+                                    ${(rawOrder.orderInfo || []).map((item, index) => {
+                                      const productName = typeof item.productInfo === 'string' 
+                                        ? 'Product' 
+                                        : (item.productInfo?.description?.name || 'Product');
+                                      const specs = item.selectedSpecs && Object.keys(item.selectedSpecs).length > 0 
+                                        ? Object.entries(item.selectedSpecs).map(([key, value]) => `${key}: ${value}`).join(', ')
+                                        : 'No specs';
+                                      return `
+                                        <tr>
+                                          <td>${productName}</td>
+                                          <td style="font-size: 10px;">${specs}</td>
+                                          <td>${item.quantity}</td>
+                                          <td>৳${Math.round((item.totalAmount?.subTotal || 0) / item.quantity)}</td>
+                                          <td>৳${item.totalAmount?.subTotal || 0}</td>
+                                          <td>${item.status}</td>
+                                        </tr>
+                                      `;
+                                    }).join('')}
                                   </tbody>
                                 </table>
                               </div>
@@ -1374,6 +1380,7 @@ const OrderPage = () => {
                         <TableHeader>
                           <TableRow className="print:border-b-2 print:border-gray-400">
                             <TableHead>Item</TableHead>
+                            <TableHead>Specifications</TableHead>
                             <TableHead>Qty</TableHead>
                             <TableHead>Price</TableHead>
                           </TableRow>
@@ -1387,6 +1394,19 @@ const OrderPage = () => {
                                     <ProductName productId={item.productInfo} />
                                   ) : (
                                     (item.productInfo as any)?.description?.name || "N/A"
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {item.selectedSpecs && Object.keys(item.selectedSpecs).length > 0 ? (
+                                    <div className="space-y-1">
+                                      {Object.entries(item.selectedSpecs).map(([key, value]) => (
+                                        <div key={key} className="text-xs bg-gray-100 px-2 py-1 rounded inline-block mr-1 mb-1">
+                                          <span className="font-medium capitalize">{key}:</span> {String(value)}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400 text-xs">No specs</span>
                                   )}
                                 </TableCell>
                                 <TableCell>{item.quantity}</TableCell>
